@@ -99,6 +99,10 @@ func (w *Writer) handleTask(task Task) error {
 		return w.WriteTableMeta(t.DatabaseName, t.TableName, t.CreateTableSQL)
 	case *TaskViewMeta:
 		return w.WriteViewMeta(t.DatabaseName, t.ViewName, t.CreateTableSQL, t.CreateViewSQL)
+	case *TaskFunctionMeta:
+		return w.WriteFunctionMeta(t.DatabaseName, t.FunctionName, t.CreateFunctionSQL)
+	case *TaskProcedureMeta:
+		return w.WriteProcedureMeta(t.DatabaseName, t.ProcedureName, t.CreateProcedureSQL)
 	case *TaskTableData:
 		err := w.WriteTableData(t.Meta, t.Data, t.ChunkIndex)
 		if err != nil {
@@ -150,6 +154,24 @@ func (w *Writer) WriteViewMeta(db, view, createTableSQL, createViewSQL string) e
 		return err
 	}
 	return writeMetaToFile(tctx, db, createViewSQL, w.extStorage, fileNameView+".sql", conf.CompressType)
+}
+
+func (w *Writer) WriteProcedureMeta(db, proc, createProcedureSQL string) error {
+	tctx, conf := w.tctx, w.conf
+	fileName, err := (&outputFileNamer{DB: db, Table: proc}).render(conf.OutputFileTemplate, outputFileTemplateProcedure)
+	if err != nil {
+		return err
+	}
+	return writeMetaToFile(tctx, db, createProcedureSQL, w.extStorage, fileName+".sql", conf.CompressType)
+}
+
+func (w *Writer) WriteFunctionMeta(db, funcName, createProcedureSQL string) error {
+	tctx, conf := w.tctx, w.conf
+	fileName, err := (&outputFileNamer{DB: db, Table: funcName}).render(conf.OutputFileTemplate, outputFileTemplateFunction)
+	if err != nil {
+		return err
+	}
+	return writeMetaToFile(tctx, db, createProcedureSQL, w.extStorage, fileName+".sql", conf.CompressType)
 }
 
 // WriteTableData writes table data to a file with retry

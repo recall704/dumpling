@@ -34,6 +34,20 @@ type TaskViewMeta struct {
 	CreateViewSQL  string
 }
 
+type TaskProcedureMeta struct {
+	Task
+	DatabaseName       string
+	ProcedureName      string
+	CreateProcedureSQL string
+}
+
+type TaskFunctionMeta struct {
+	Task
+	DatabaseName      string
+	FunctionName      string
+	CreateFunctionSQL string
+}
+
 // TaskTableData is a dumping table data task
 type TaskTableData struct {
 	Task
@@ -70,6 +84,22 @@ func NewTaskViewMeta(dbName, tblName, createTableSQL, createViewSQL string) *Tas
 	}
 }
 
+func NewTaskProcedureMeta(dbName, procName, createProcedureSQL string) *TaskProcedureMeta {
+	return &TaskProcedureMeta{
+		DatabaseName:       dbName,
+		ProcedureName:      procName,
+		CreateProcedureSQL: createProcedureSQL,
+	}
+}
+
+func NewTaskFunctionMeta(dbName, funcName, createFunctionSQL string) *TaskFunctionMeta {
+	return &TaskFunctionMeta{
+		DatabaseName:      dbName,
+		FunctionName:      funcName,
+		CreateFunctionSQL: createFunctionSQL,
+	}
+}
+
 // NewTaskTableData returns a new dumping table data task
 func NewTaskTableData(meta TableMeta, data TableDataIR, currentChunk, totalChunks int) *TaskTableData {
 	return &TaskTableData{
@@ -93,6 +123,14 @@ func (t *TaskTableMeta) Brief() string {
 // Brief implements task.Brief
 func (t *TaskViewMeta) Brief() string {
 	return fmt.Sprintf("meta of view '%s'.'%s'", t.DatabaseName, t.ViewName)
+}
+
+func (t *TaskFunctionMeta) Brief() string {
+	return fmt.Sprintf("meta of function '%s'.'%s'", t.DatabaseName, t.FunctionName)
+}
+
+func (t *TaskProcedureMeta) Brief() string {
+	return fmt.Sprintf("meta of procedure '%s'.'%s'", t.DatabaseName, t.ProcedureName)
 }
 
 // Brief implements task.Brief

@@ -45,6 +45,7 @@ const (
 	flagConsistency              = "consistency"
 	flagSnapshot                 = "snapshot"
 	flagNoViews                  = "no-views"
+	flagRoutines                 = "routines"
 	flagStatusAddr               = "status-addr"
 	flagRows                     = "rows"
 	flagWhere                    = "where"
@@ -85,6 +86,7 @@ type Config struct {
 	NoHeader                 bool
 	NoSchemas                bool
 	NoData                   bool
+	Routines                 bool
 	CompleteInsert           bool
 	TransactionalConsistency bool
 	EscapeBackslash          bool
@@ -153,6 +155,7 @@ func DefaultConfig() *Config {
 		Snapshot:           "",
 		Consistency:        consistencyTypeAuto,
 		NoViews:            true,
+		Routines:           false,
 		Rows:               UnspecifiedSize,
 		Where:              "",
 		FileType:           "",
@@ -225,6 +228,7 @@ func (conf *Config) DefineFlags(flags *pflag.FlagSet) {
 	flags.Bool(flagNoHeader, false, "whether not to dump CSV table header")
 	flags.BoolP(flagNoSchemas, "m", false, "Do not dump table schemas with the data")
 	flags.BoolP(flagNoData, "d", false, "Do not dump table data")
+	flags.BoolP(flagRoutines, "R", false, "Dump stored procedures and functions")
 	flags.String(flagCsvNullValue, "\\N", "The null value used when export to csv")
 	flags.StringP(flagSQL, "S", "", "Dump data with given sql. This argument doesn't support concurrent dump")
 	_ = flags.MarkHidden(flagSQL)
@@ -309,6 +313,10 @@ func (conf *Config) ParseFromFlags(flags *pflag.FlagSet) error {
 		return errors.Trace(err)
 	}
 	conf.NoViews, err = flags.GetBool(flagNoViews)
+	if err != nil {
+		return errors.Trace(err)
+	}
+	conf.Routines, err = flags.GetBool(flagRoutines)
 	if err != nil {
 		return errors.Trace(err)
 	}

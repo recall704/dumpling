@@ -13,10 +13,12 @@ import (
 )
 
 const (
-	outputFileTemplateSchema = "schema"
-	outputFileTemplateTable  = "table"
-	outputFileTemplateView   = "view"
-	outputFileTemplateData   = "data"
+	outputFileTemplateSchema    = "schema"
+	outputFileTemplateTable     = "table"
+	outputFileTemplateView      = "view"
+	outputFileTemplateFunction  = "function"
+	outputFileTemplateProcedure = "procedure"
+	outputFileTemplateData      = "data"
 
 	defaultOutputFileTemplateBase = `
 		{{- define "objectName" -}}

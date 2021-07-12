@@ -1009,3 +1009,107 @@ func GetPartitionNames(db *sql.Conn, schema, table string) (partitions []string,
 	}, "SELECT PARTITION_NAME from INFORMATION_SCHEMA.PARTITIONS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?", schema, table)
 	return
 }
+
+type RoutineRowItem struct {
+	Db                  string
+	Name                string
+	Type                string
+	Definer             string
+	Modified            string
+	Created             string
+	SecurityType        string
+	Comment             string
+	CharacterSetClient  string
+	CollationConnection string
+	DatabaseCollation   string
+}
+
+func ListProcedureInDb(db *sql.Conn, database string) ([]string, error) {
+	var prList []RoutineRowItem
+	handleOneRow := func(rows *sql.Rows) error {
+		var p RoutineRowItem
+		if err := rows.Scan(&p.Db, &p.Name, &p.Type, &p.Definer, &p.Modified, &p.Created, &p.SecurityType, &p.Comment,
+			&p.CharacterSetClient, &p.CollationConnection, &p.DatabaseCollation); err != nil {
+			return err
+		}
+		prList = append(prList, p)
+		return nil
+	}
+	query := fmt.Sprintf("SHOW PROCEDURE STATUS WHERE Db = '%s'", escapeString(database))
+	err := simpleQuery(db, query, handleOneRow)
+	if err != nil {
+		return nil, errors.Annotatef(err, "sql: %s", query)
+	}
+	var result []string
+	for _, item := range prList {
+		result = append(result, item.Name)
+	}
+	return result, nil
+}
+
+func ShowCreateProcedure(db *sql.Conn, database, procedure string) (createRealProcedureSQL string, err error) {
+	var oneRow [6]string
+	handleOneRow := func(rows *sql.Rows) error {
+		return rows.Scan(&oneRow[0], &oneRow[1], &oneRow[2], &oneRow[3], &oneRow[4], &oneRow[5])
+	}
+
+	var createProcedureSQL strings.Builder
+	// Build createProcedureSQL
+	fmt.Fprintf(&createProcedureSQL, "DROP PROCEDURE  IF EXISTS `%s`;\n", escapeString(procedure))
+	query := fmt.Sprintf("SHOW CREATE PROCEDURE  `%s`.`%s`", escapeString(database), escapeString(procedure))
+	err = simpleQuery(db, query, handleOneRow)
+	if err != nil {
+		return "", err
+	}
+	SetCharset(&createProcedureSQL, oneRow[3], oneRow[4])
+	createProcedureSQL.WriteString(oneRow[2])
+	createProcedureSQL.WriteString(";\n")
+	RestoreCharset(&createProcedureSQL)
+
+	return createProcedureSQL.String(), nil
+}
+
+func ListFunctionInDb(db *sql.Conn, database string) ([]string, error) {
+	var prList []RoutineRowItem
+	handleOneRow := func(rows *sql.Rows) error {
+		var p RoutineRowItem
+		if err := rows.Scan(&p.Db, &p.Name, &p.Type, &p.Definer, &p.Modified, &p.Created, &p.SecurityType, &p.Comment,
+			&p.CharacterSetClient, &p.CollationConnection, &p.DatabaseCollation); err != nil {
+			return err
+		}
+		prList = append(prList, p)
+		return nil
+	}
+	query := fmt.Sprintf("SHOW FUNCTION STATUS WHERE Db = '%s'", escapeString(database))
+	err := simpleQuery(db, query, handleOneRow)
+	if err != nil {
+		return nil, errors.Annotatef(err, "sql: %s", query)
+	}
+	var result []string
+	for _, item := range prList {
+		result = append(result, item.Name)
+	}
+	return result, nil
+}
+
+func ShowCreateFunction(db *sql.Conn, database, functionName string) (createRealFunctionSQL string, err error) {
+	var oneRow [6]string
+	handleOneRow := func(rows *sql.Rows) error {
+		return rows.Scan(&oneRow[0], &oneRow[1], &oneRow[2], &oneRow[3], &oneRow[4], &oneRow[5])
+	}
+
+	var createFunctionSQL strings.Builder
+	// Build createFunctionSQL
+	fmt.Fprintf(&createFunctionSQL, "DROP FUNCTION IF EXISTS `%s`;\n", escapeString(functionName))
+	query := fmt.Sprintf("SHOW CREATE FUNCTION  `%s`.`%s`", escapeString(database), escapeString(functionName))
+	err = simpleQuery(db, query, handleOneRow)
+	if err != nil {
+		return "", err
+	}
+	SetCharset(&createFunctionSQL, oneRow[3], oneRow[4])
+	createFunctionSQL.WriteString(oneRow[2])
+	createFunctionSQL.WriteString(";\n")
+	RestoreCharset(&createFunctionSQL)
+
+	return createFunctionSQL.String(), nil
+}

@@ -296,6 +296,41 @@ func (d *Dumper) dumpDatabases(tctx *tcontext.Context, metaConn *sql.Conn, taskC
 			return tctx.Err()
 		}
 
+		// backup function and procedure
+		if conf.Routines {
+			procList, err := ListProcedureInDb(metaConn, dbName)
+			if err != nil {
+				return err
+			}
+			for _, proc := range procList {
+				createSQL, err := ShowCreateProcedure(metaConn, dbName, proc)
+				if err != nil {
+					return err
+				}
+				task := NewTaskProcedureMeta(dbName, proc, createSQL)
+				ctxDone = d.sendTaskToChan(tctx, task, taskChan)
+				if ctxDone {
+					return tctx.Err()
+				}
+			}
+
+			funcList, err := ListFunctionInDb(metaConn, dbName)
+			if err != nil {
+				return err
+			}
+			for _, fn := range funcList {
+				createSQL, err := ShowCreateFunction(metaConn, dbName, fn)
+				if err != nil {
+					return err
+				}
+				task := NewTaskFunctionMeta(dbName, fn, createSQL)
+				ctxDone = d.sendTaskToChan(tctx, task, taskChan)
+				if ctxDone {
+					return tctx.Err()
+				}
+			}
+		}
+
 		for _, table := range tables {
 			tctx.L().Debug("start dumping table...", zap.String("database", dbName),
 				zap.String("table", table.Name))

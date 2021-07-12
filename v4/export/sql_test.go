@@ -1187,3 +1187,23 @@ func makeVersion(major, minor, patch int64, preRelease string) *semver.Version {
 		Metadata:   "",
 	}
 }
+
+func (s *testSQLSuite) TestListProcedureInDb(c *C) {
+	db, mock, err := sqlmock.New()
+	c.Assert(err, IsNil)
+	defer db.Close()
+	conn, err := db.Conn(context.Background())
+	c.Assert(err, IsNil)
+
+	dbName := "test"
+	mock.ExpectQuery(fmt.Sprintf("SHOW PROCEDURE STATUS WHERE Db = `%s`", escapeString(dbName))).
+		WillReturnRows(sqlmock.NewRows([]string{"Db", "Name", "Type", "Definer", "Modified", "Created", "Security_type", "Comment", "character_set_client", "collation_connection", "Database Collation"}).
+			AddRow("test", "testproc1", "PROCEDURE", "root@%", "2021-03-18 10:59:31", "2021-03-18 10:59:31", "INVOKER", "Description", "utf8", "utf8_general_ci", "utf8_general_ci").
+			AddRow("test", "testproc2", "PROCEDURE", "root@%", "2021-03-18 10:59:31", "2021-03-18 10:59:31", "INVOKER", "Description", "utf8", "utf8_general_ci", "utf8_general_ci"))
+
+	result, err := ListProcedureInDb(conn, dbName)
+	c.Log(result)
+	c.Assert(err, IsNil)
+	c.Assert(len(result), Equals, 2)
+	c.Assert(result, Equals, []string{"testproc1", "testproc2"})
+}
